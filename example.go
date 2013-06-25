@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	Server   = "127.0.1.1:6379"
+	Server   = "127.0.0.1:6379"
 	Db       = 0
 	Password = ""
 	Name     = "redisq:kenshin"
@@ -25,7 +25,7 @@ func get() {
 }
 
 func getNoWait() {
-	msg, err := rq.GetNoWait()
+	msg, _ := rq.GetNoWait()
 	fmt.Printf("get: %s\n", msg)
 }
 
@@ -56,5 +56,6 @@ func empty() {
 }
 
 func main() {
-	get()
+	clear()
+	put()
 }
