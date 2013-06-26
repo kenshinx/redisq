@@ -5,6 +5,8 @@ A simple redis queue written by go.  Inspired by [python-hotqueue](https://githu
 
 ## Install
 
+>go get github.com/hoisie/redis
+
 >go get github.com/kenshinx/redisq
 
 ## Example
