@@ -46,6 +46,9 @@ func (rq *RedisQueue) Consume(block bool, timeout uint, msgs chan []byte) {
 				log.Printf("[redis queue] consumer exit. since of: %s\n", err)
 				break
 			}
+			if msg == nil {
+				continue
+			}
 			msgs <- msg
 		}
 	}()
