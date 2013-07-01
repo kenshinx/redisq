@@ -86,8 +86,6 @@ func (rq *RedisQueue) String() string {
 
 }
 
-// Setting password is invalid now. hoisie/redis auth didn't implemented yet.
-// Waitting for https://github.com/hoisie/redis/pull/21 merged
 func NewRedisQueue(addr string, db int, password string, name string) (rq *RedisQueue) {
 	var client = &redis.Client{Addr: addr, Db: db, Password: password}
 	rq = &RedisQueue{}

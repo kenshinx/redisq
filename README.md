@@ -73,7 +73,7 @@ for {
 
 Much more example checkout from example.go
 
-[!!] Note: Auth is invalid now.since of hoisie/redis auth didn't implemented yet
+~~[!!] Note: Auth is invalid now.since of hoisie/redis auth didn't implemented yet~~
 
 ## TODO
 
