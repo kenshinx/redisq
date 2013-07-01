@@ -57,7 +57,7 @@ func (rq *RedisQueue) Consume(block bool, timeout uint, msgs chan []byte) {
 func (rq *RedisQueue) Length() int {
 	len, err := rq.redis.Llen(rq.name)
 	if err != nil {
-		log.Printf("get redis queue length failed: %s\n", err)
+		log.Printf("[redis queue] get length failed: %s\n", err)
 		return -1
 	}
 	return len
@@ -66,7 +66,7 @@ func (rq *RedisQueue) Length() int {
 func (rq *RedisQueue) Empty() bool {
 	len, err := rq.redis.Llen(rq.name)
 	if err != nil {
-		log.Printf("get redis queue length failed: %s\n", err)
+		log.Printf("[redis queue] get length failed: %s\n", err)
 		return true
 	}
 	return len == 0
@@ -75,7 +75,7 @@ func (rq *RedisQueue) Empty() bool {
 func (rq *RedisQueue) Clear() error {
 	_, err := rq.redis.Del(rq.name)
 	if err != nil {
-		log.Printf("clear redis queue failed : %s\n", err)
+		log.Printf("[redis queue ] clear failed : %s\n", err)
 		return err
 	}
 	return nil
