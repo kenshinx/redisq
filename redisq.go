@@ -6,6 +6,15 @@ import (
 	"log"
 )
 
+type EmptyQueue struct {
+	name string
+}
+
+func (e EmptyQueue) Error() string {
+	return "Empty Queue: " + e.name
+
+}
+
 type RedisQueue struct {
 	redis      *redis.Client
 	name       string
@@ -36,7 +45,8 @@ func (rq *RedisQueue) Put(msg interface{}) error {
 	return nil
 }
 
-func (rq *RedisQueue) Get(block bool, timeout uint) (msg []byte, err error) {
+func (rq *RedisQueue) Get(block bool, timeout uint) (i interface{}, err error) {
+	var msg []byte
 	if block {
 		_, msg, err = rq.redis.Blpop([]string{rq.name}, timeout)
 	} else {
@@ -44,27 +54,32 @@ func (rq *RedisQueue) Get(block bool, timeout uint) (msg []byte, err error) {
 	}
 	if err != nil {
 		log.Printf("[redis queue] get message failed: %s\n", err)
+		return nil, err
 	}
+	if msg == nil {
+		return nil, EmptyQueue{rq.name}
+	}
+	i, err = rq.serializer.Loads(msg)
+	if err != nil {
+		log.Printf("[redis queue] %s decode failed:%s", msg, err)
+	}
+	return i, nil
+}
+
+func (rq *RedisQueue) GetNoWait() (i interface{}, err error) {
+	i, err = rq.Get(false, 0)
 	return
 }
 
-func (rq *RedisQueue) GetNoWait() (msg []byte, err error) {
-	msg, err = rq.Get(false, 0)
-	return
-}
-
-func (rq *RedisQueue) Consume(block bool, timeout uint, msgs chan []byte) {
+func (rq *RedisQueue) Consume(block bool, timeout uint, msgs chan interface{}) {
 	go func() {
 		for {
-			msg, err := rq.Get(block, timeout)
+			i, err := rq.Get(block, timeout)
 			if err != nil {
-				log.Printf("[redis queue] consumer exit. since of: %s\n", err)
+				log.Printf("[redis queue] get message failed. since of: %s\n", err)
 				continue
 			}
-			if msg == nil {
-				continue
-			}
-			msgs <- msg
+			msgs <- i
 		}
 	}()
 }
@@ -103,7 +118,7 @@ func (rq *RedisQueue) String() string {
 
 type Serializer interface {
 	Dumps(v interface{}) ([]byte, error)
-	Loads()
+	Loads(data []byte) (interface{}, error)
 }
 
 type JsonSerializer struct {
@@ -114,6 +129,8 @@ func (JsonSerializer) Dumps(v interface{}) (encoded []byte, err error) {
 	return
 }
 
-func (JsonSerializer) Loads() {
+func (JsonSerializer) Loads(data []byte) (decoded interface{}, err error) {
+	err = json.Unmarshal(data, &decoded)
 	return
+
 }

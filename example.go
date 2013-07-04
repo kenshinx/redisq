@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"redisq"
+	"reflect"
 )
 
 const (
@@ -26,21 +27,21 @@ func put() {
 
 func get() {
 	msg, _ := rq.Get(true, 1)
-	fmt.Printf("get: %s\n", msg)
+	fmt.Printf("get msg: %v,type:%s\n", msg, reflect.TypeOf(msg))
 }
 
 func getNoWait() {
 	msg, _ := rq.GetNoWait()
-	fmt.Printf("get: %s\n", msg)
+	fmt.Printf("get: %v\n", msg)
 }
 
 func consume() {
-	var msgs = make(chan []byte)
+	var msgs = make(chan interface{})
 	rq.Consume(true, 1, msgs)
 	for {
 		msg := <-msgs
 		if msg != nil {
-			fmt.Printf("get msg: %s\n", string(msg))
+			fmt.Printf("get msg: %v,type:%s\n", msg, reflect.TypeOf(msg))
 		}
 
 	}
@@ -62,4 +63,5 @@ func empty() {
 
 func main() {
 	put()
+	consume()
 }
