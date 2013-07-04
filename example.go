@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	Server   = "127.0.0.1:6379"
+	Server   = "localhost:6379"
 	Db       = 0
 	Password = ""
 	Name     = "redisq:kenshin"
@@ -15,8 +15,13 @@ const (
 var rq = redisq.NewRedisQueue(Server, Db, Password, Name)
 
 func put() {
-	mesg := []string{"a", "b", "c", "d"}
-	rq.Put(mesg)
+
+	rq.Put("a")
+	rq.Put(1)
+	rq.Put([]string{"a", "b", "c"})
+	rq.Put(map[string]int{"a": 1, "b": 2})
+	//json unsupported type: map[int]string
+
 }
 
 func get() {
@@ -56,6 +61,5 @@ func empty() {
 }
 
 func main() {
-	clear()
 	put()
 }

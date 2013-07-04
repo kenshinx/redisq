@@ -1,23 +1,38 @@
 package redisq
 
 import (
+	"encoding/json"
 	"github.com/hoisie/redis"
 	"log"
 )
 
 type RedisQueue struct {
-	redis *redis.Client
-	name  string
+	redis      *redis.Client
+	name       string
+	serializer Serializer
 }
 
-func (rq *RedisQueue) Put(msgs []string) error {
-	for _, m := range msgs {
-		err := rq.redis.Rpush(rq.name, []byte(m))
-		if err != nil {
-			log.Printf("[redis queue] put '%s' failed: %s\n", string(m), err)
-			return err
-		}
+func NewRedisQueue(addr string, db int, password string, name string) (rq *RedisQueue) {
+	var client = &redis.Client{Addr: addr, Db: db, Password: password}
+	rq = &RedisQueue{}
+	rq.redis = client
+	rq.name = name
+	rq.serializer = JsonSerializer{}
+	return
+}
+
+func (rq *RedisQueue) Put(msg interface{}) error {
+
+	encoded, err := rq.serializer.Dumps(msg)
+	if err != nil {
+		log.Printf("[redis queue] %v encode failed:%s", msg, err)
+		return err
 	}
+	if err := rq.redis.Rpush(rq.name, encoded); err != nil {
+		log.Printf("[redis queue] insert '%v' failed: %s\n", encoded, err)
+		return err
+	}
+
 	return nil
 }
 
@@ -86,10 +101,19 @@ func (rq *RedisQueue) String() string {
 
 }
 
-func NewRedisQueue(addr string, db int, password string, name string) (rq *RedisQueue) {
-	var client = &redis.Client{Addr: addr, Db: db, Password: password}
-	rq = &RedisQueue{}
-	rq.redis = client
-	rq.name = name
+type Serializer interface {
+	Dumps(v interface{}) ([]byte, error)
+	Loads()
+}
+
+type JsonSerializer struct {
+}
+
+func (JsonSerializer) Dumps(v interface{}) (encoded []byte, err error) {
+	encoded, err = json.Marshal(v)
+	return
+}
+
+func (JsonSerializer) Loads() {
 	return
 }
