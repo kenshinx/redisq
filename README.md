@@ -30,18 +30,22 @@ var rq = redisq.NewRedisQueue(Server, Db, Password, Name)
 #### Put
 
 ```
-mesg := []string{"a", "b", "c", "d"}
-rq.Put(mesg)
+rq.Put("a")
+rq.Put(1)
+rq.Put([]string{"a", "b", "c"})
+rq.Put(map[string]int{"a": 1, "b": 2})
 ```
-*support insert bulk of messages into queue one time*
+* The raw data will be json encode,then insert into redis
 
 query by redis-cli:
 
 	redis 127.0.0.1:6379> lrange redisq:kenshin 0 -1
-	1) "a"
-	2) "b"
-	3) "c"
-	4) "d"
+	1) "\"a\""
+	2) "1"
+	3) "[\"a\",\"b\",\"c\"]"
+	4) "{\"a\":1,\"b\":2}"
+
+	//json encoded data
 
 #### Get 
 
@@ -61,21 +65,18 @@ msg, _ := rq.Get(false, 0)
 #### Consume
 
 ```
-var msgs = make(chan []byte)
+var msgs = make(chan interface{})
 rq.Consume(true, 1, msgs)
 for {
 	msg := <-msgs
 	if msg != nil {
-		fmt.Printf("get msg: %s\n", string(msg))
+		fmt.Printf("get msg: %v,type:%s\n", msg, reflect.TypeOf(msg))
 	}
+
 }
+
 ```
 
 Much more example checkout from example.go
 
 ~~[!!] Note: Auth is invalid now.since of hoisie/redis auth didn't implemented yet~~
-
-## TODO
-
-* Json encode
-* Dynamic type
