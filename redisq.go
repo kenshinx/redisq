@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/hoisie/redis"
 	"log"
+	"os"
 )
 
 type EmptyQueue struct {
@@ -19,6 +20,7 @@ type RedisQueue struct {
 	redis      *redis.Client
 	name       string
 	serializer Serializer
+	logger     *log.Logger
 }
 
 func NewRedisAndQueue(addr string, db int, password string, name string) (rq *RedisQueue) {
@@ -27,23 +29,29 @@ func NewRedisAndQueue(addr string, db int, password string, name string) (rq *Re
 	rq.redis = client
 	rq.name = name
 	rq.serializer = JsonSerializer{}
+	rq.logger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	return
 }
 
 func NewRedisQueue(redis *redis.Client, name string) (rq *RedisQueue) {
-	rq = &RedisQueue{redis, name, JsonSerializer{}}
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	rq = &RedisQueue{redis, name, JsonSerializer{}, logger}
 	return
+}
+
+func (rq *RedisQueue) SetLogger(logger *log.Logger) {
+	rq.logger = logger
 }
 
 func (rq *RedisQueue) Put(msg interface{}) error {
 
 	encoded, err := rq.serializer.Dumps(msg)
 	if err != nil {
-		log.Printf("[redis queue] %v encode failed:%s", msg, err)
+		rq.logger.Printf("[redis queue] %v encode failed:%s", msg, err)
 		return err
 	}
 	if err := rq.redis.Rpush(rq.name, encoded); err != nil {
-		log.Printf("[redis queue] insert '%v' failed: %s\n", encoded, err)
+		rq.logger.Printf("[redis queue] insert '%v' failed: %s\n", encoded, err)
 		return err
 	}
 
@@ -58,7 +66,7 @@ func (rq *RedisQueue) Get(block bool, timeout uint) (i interface{}, err error) {
 		msg, err = rq.redis.Lpop(rq.name)
 	}
 	if err != nil {
-		log.Printf("[redis queue] get message failed: %s\n", err)
+		rq.logger.Printf("[redis queue] get message failed: %s\n", err)
 		return nil, err
 	}
 	if msg == nil {
@@ -66,7 +74,7 @@ func (rq *RedisQueue) Get(block bool, timeout uint) (i interface{}, err error) {
 	}
 	i, err = rq.serializer.Loads(msg)
 	if err != nil {
-		log.Printf("[redis queue] %s decode failed:%s", msg, err)
+		rq.logger.Printf("[redis queue] %s decode failed:%s", msg, err)
 	}
 	return i, nil
 }
@@ -81,7 +89,7 @@ func (rq *RedisQueue) Consume(block bool, timeout uint, msgs chan interface{}) {
 		for {
 			i, err := rq.Get(block, timeout)
 			if err != nil {
-				log.Printf("[redis queue] get message failed. since of: %s\n", err)
+				rq.logger.Printf("[redis queue] get message failed. since of: %s\n", err)
 				continue
 			}
 			msgs <- i
@@ -92,7 +100,7 @@ func (rq *RedisQueue) Consume(block bool, timeout uint, msgs chan interface{}) {
 func (rq *RedisQueue) Length() int {
 	len, err := rq.redis.Llen(rq.name)
 	if err != nil {
-		log.Printf("[redis queue] get length failed: %s\n", err)
+		rq.logger.Printf("[redis queue] get length failed: %s\n", err)
 		return -1
 	}
 	return len
@@ -101,7 +109,7 @@ func (rq *RedisQueue) Length() int {
 func (rq *RedisQueue) Empty() bool {
 	len, err := rq.redis.Llen(rq.name)
 	if err != nil {
-		log.Printf("[redis queue] get length failed: %s\n", err)
+		rq.logger.Printf("[redis queue] get length failed: %s\n", err)
 		return true
 	}
 	return len == 0
@@ -110,7 +118,7 @@ func (rq *RedisQueue) Empty() bool {
 func (rq *RedisQueue) Clear() error {
 	_, err := rq.redis.Del(rq.name)
 	if err != nil {
-		log.Printf("[redis queue ] clear failed : %s\n", err)
+		rq.logger.Printf("[redis queue ] clear failed : %s\n", err)
 		return err
 	}
 	return nil
