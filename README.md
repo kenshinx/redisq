@@ -24,7 +24,7 @@ const (
 	Password = ""
 	Name     = "redisq:kenshin"
 )
-var rq = redisq.NewRedisQueue(Server, Db, Password, Name)
+var rq = redisq.NewRedisAndQueue(Server, Db, Password, Name)
 ```
 
 #### Put

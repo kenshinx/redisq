@@ -21,12 +21,17 @@ type RedisQueue struct {
 	serializer Serializer
 }
 
-func NewRedisQueue(addr string, db int, password string, name string) (rq *RedisQueue) {
+func NewRedisAndQueue(addr string, db int, password string, name string) (rq *RedisQueue) {
 	var client = &redis.Client{Addr: addr, Db: db, Password: password}
 	rq = &RedisQueue{}
 	rq.redis = client
 	rq.name = name
 	rq.serializer = JsonSerializer{}
+	return
+}
+
+func NewRedisQueue(redis *redis.Client, name string) (rq *RedisQueue) {
+	rq = &RedisQueue{redis, name, JsonSerializer{}}
 	return
 }
 
