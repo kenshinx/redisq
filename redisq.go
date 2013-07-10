@@ -75,6 +75,7 @@ func (rq *RedisQueue) Get(block bool, timeout uint) (i interface{}, err error) {
 	i, err = rq.serializer.Loads(msg)
 	if err != nil {
 		rq.logger.Printf("[redis queue] %s decode failed:%s", msg, err)
+		return nil, err
 	}
 	return i, nil
 }
@@ -104,6 +105,11 @@ func (rq *RedisQueue) Length() int {
 		return -1
 	}
 	return len
+}
+
+func (rq *RedisQueue) Exists() bool {
+	exists, _ := rq.redis.Exists(rq.name)
+	return exists
 }
 
 func (rq *RedisQueue) Empty() bool {
